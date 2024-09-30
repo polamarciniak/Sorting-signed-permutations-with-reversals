@@ -1,0 +1,743 @@
+--- Splay Tree.cpp	2024-08-29 10:28:34.000000000 +0200
++++ ./praca_inzynierska/splay.cpp	2024-08-29 10:12:35.000000000 +0200
+@@ -1,427 +1,314 @@
+-/*
+- Petar 'PetarV' Velickovic
+- Data Structure: Splay Tree
+-*/
+-
+-#include <stdio.h>
+-#include <math.h>
+-#include <string.h>
+-#include <time.h>
+-#include <iostream>
+-#include <vector>
+-#include <list>
+-#include <string>
+-#include <algorithm>
+-#include <queue>
+-#include <stack>
+-#include <set>
+-#include <map>
+-#include <complex>
+-using namespace std;
+-typedef long long lld;
+-typedef unsigned long long llu;
+-
+-/*
+- Splay Tree data structure is an efficient self-balancing implementation of a binary search tree.
+- Complexity:    O(log N) amortized for all operations
+-*/
+-
+-struct TreeNode
+-{
+-    int key;
+-    TreeNode* parent;
+-    TreeNode* left;
+-    TreeNode* right;
+-    
+-    TreeNode(int key)
+-    {
+-        this -> key = key;
+-        this -> parent = NULL;
+-        this -> left = NULL;
+-        this -> right = NULL;
+-    }
+-};
+-
+-class SplayTree
+-{
+-    TreeNode *root;
+-    
+-    void zig(TreeNode*);
+-    void zig_zig(TreeNode*);
+-    void zig_zag(TreeNode*);
+-    
+-    void splay(TreeNode*);
+-    
+-public:
+-    SplayTree();
+-    SplayTree(TreeNode*);
+-    TreeNode* find(int);
+-    void insert(int);
+-    void Delete(int);
+-    void inOrderPrint(bool);
+-};
+-
+-void SplayTree::zig(TreeNode *x)
+-{
+-    TreeNode *p = x -> parent;
+-    if (p -> left == x)
+-    {
+-        TreeNode *A = x -> left;
+-        TreeNode *B = x -> right;
+-        TreeNode *C = p -> right;
+-        
+-        x -> parent = NULL;
+-        x -> right = p;
+-        
+-        p -> parent = x;
+-        p -> left = B;
+-        
+-        if (B != NULL) B -> parent = p;
+-    }
+-    else
+-    {
+-        TreeNode *A = p -> left;
+-        TreeNode *B = x -> left;
+-        TreeNode *C = x -> right;
+-        
+-        x -> parent = NULL;
+-        x -> left = p;
+-        
+-        p -> parent = x;
+-        p -> right = B;
+-        
+-        if (B != NULL) B -> parent = p;
+-    }
+-}
+-
+-void SplayTree::zig_zig(TreeNode *x)
+-{
+-    TreeNode *p = x -> parent;
+-    TreeNode *g = p -> parent;
+-    if (p -> left == x)
+-    {
+-        TreeNode *A = x -> left;
+-        TreeNode *B = x -> right;
+-        TreeNode *C = p -> right;
+-        TreeNode *D = g -> right;
+-        
+-        x -> parent = g -> parent;
+-        x -> right = p;
+-        
+-        p -> parent = x;
+-        p -> left = B;
+-        p -> right = g;
+-        
+-        g -> parent = p;
+-        g -> left = C;
+-        
+-        
+-        if (x -> parent != NULL)
+-        {
+-            if (x -> parent -> left == g) x -> parent -> left = x;
+-            else x -> parent -> right = x;
+-        }
+-        
+-        if (B != NULL) B -> parent = p;
+-        
+-        if (C != NULL) C -> parent = g;
+-    }
+-    else
+-    {
+-        TreeNode *A = g -> left;
+-        TreeNode *B = p -> left;
+-        TreeNode *C = x -> left;
+-        TreeNode *D = x -> right;
+-        
+-        x -> parent = g -> parent;
+-        x -> left = p;
+-        
+-        p -> parent = x;
+-        p -> left = g;
+-        p -> right = C;
+-        
+-        g -> parent = p;
+-        g -> right = B;
+-        
+-        if (x -> parent != NULL)
+-        {
+-            if (x -> parent -> left == g) x -> parent -> left = x;
+-            else x -> parent -> right = x;
+-        }
+-        
+-        if (B != NULL) B -> parent = g;
+-        
+-        if (C != NULL) C -> parent = p;
+-    }
+-}
+-
+-void SplayTree::zig_zag(TreeNode *x)
+-{
+-    TreeNode *p = x -> parent;
+-    TreeNode *g = p -> parent;
+-    if (p -> right == x)
+-    {
+-        TreeNode *A = p -> left;
+-        TreeNode *B = x -> left;
+-        TreeNode *C = x -> right;
+-        TreeNode *D = g -> right;
+-        
+-        x -> parent = g -> parent;
+-        x -> left = p;
+-        x -> right = g;
+-        
+-        p -> parent = x;
+-        p -> right = B;
+-        
+-        g -> parent = x;
+-        g -> left = C;
+-        
+-        if (x -> parent != NULL)
+-        {
+-            if (x -> parent -> left == g) x -> parent -> left = x;
+-            else x -> parent -> right = x;
+-        }
+-        
+-        if (B != NULL) B -> parent = p;
+-        
+-        if (C != NULL) C -> parent = g;
+-    }
+-    else
+-    {
+-        TreeNode *A = g -> left;
+-        TreeNode *B = x -> left;
+-        TreeNode *C = x -> right;
+-        TreeNode *D = p -> right;
+-        
+-        x -> parent = g -> parent;
+-        x -> left = g;
+-        x -> right = p;
+-        
+-        p -> parent = x;
+-        p -> left = C;
+-        
+-        g -> parent = x;
+-        g -> right = B;
+-        
+-        if (x -> parent != NULL)
+-        {
+-            if (x -> parent -> left == g) x -> parent -> left = x;
+-            else x -> parent -> right = x;
+-        }
+-        
+-        if (B != NULL) B -> parent = g;
+-        
+-        if (C != NULL) C -> parent = p;
+-    }
+-}
+-
+-void SplayTree::splay(TreeNode *x)
+-{
+-    while (x -> parent != NULL)
+-    {
+-        TreeNode *p = x -> parent;
+-        TreeNode *g = p -> parent;
+-        if (g == NULL) zig(x);
+-        else if (g -> left == p && p -> left == x) zig_zig(x);
+-        else if (g -> right == p && p -> right == x) zig_zig(x);
+-        else zig_zag(x);
+-    }
+-    this -> root = x;
+-}
+-
+-SplayTree::SplayTree()
+-{
+-    this -> root = NULL;
+-}
+-
+-SplayTree::SplayTree(TreeNode *rt)
+-{
+-    this -> root = rt;
+-}
+-
+-TreeNode* SplayTree::find(int x)
+-{
+-    TreeNode *ret = NULL;
+-    TreeNode *curr = this -> root;
+-    TreeNode *prev = NULL;
+-    while (curr != NULL)
+-    {
+-        prev = curr;
+-        if (x < curr -> key) curr = curr -> left;
+-        else if (x > curr -> key) curr = curr -> right;
+-        else
+-        {
+-            ret = curr;
+-            break;
+-        }
+-    }
+-    if (ret != NULL) splay(ret);
+-    else if (prev != NULL) splay(prev);
+-    return ret;
+-}
+-
+-void SplayTree::insert(int x)
+-{
+-    if (root == NULL)
+-    {
+-        root = new TreeNode(x);
+-        return;
+-    }
+-    TreeNode *curr = this -> root;
+-    while (curr != NULL)
+-    {
+-        if (x < curr -> key)
+-        {
+-            if (curr -> left == NULL)
+-            {
+-                TreeNode *newNode = new TreeNode(x);
+-                curr -> left = newNode;
+-                newNode -> parent = curr;
+-                splay(newNode);
+-                return;
+-            }
+-            else curr = curr -> left;
+-        }
+-        else if (x > curr -> key)
+-        {
+-            if (curr -> right == NULL)
+-            {
+-                TreeNode *newNode = new TreeNode(x);
+-                curr -> right = newNode;
+-                newNode -> parent = curr;
+-                splay(newNode);
+-                return;
+-            }
+-            else curr = curr -> right;
+-        }
+-        else
+-        {
+-            splay(curr);
+-            return;
+-        }
+-    }
+-}
+-
+-TreeNode* subtree_max(TreeNode *subRoot)
+-{
+-    TreeNode *curr = subRoot;
+-    while (curr -> right != NULL) curr = curr -> right;
+-    return curr;
+-}
+-
+-TreeNode* subtree_min(TreeNode *subRoot)
+-{
+-    TreeNode *curr = subRoot;
+-    while (curr -> left != NULL) curr = curr -> left;
+-    return curr;
+-}
+-
+-void SplayTree::Delete(int x)
+-{
+-    TreeNode *del = find(x);
+-    if (del == NULL)
+-    {
+-        return;
+-    }
+-    TreeNode *L = del -> left;
+-    TreeNode *R = del -> right;
+-    if (L == NULL && R == NULL)
+-    {
+-        this -> root = NULL;
+-    }
+-    else if (L == NULL)
+-    {
+-        TreeNode *M = subtree_min(R);
+-        splay(M);
+-    }
+-    else if (R == NULL)
+-    {
+-        TreeNode *M = subtree_max(L);
+-        splay(M);
+-    }
+-    else
+-    {
+-        TreeNode *M = subtree_max(L);
+-        splay(M);
+-        M -> right = R;
+-        R -> parent = M;
+-    }
+-    delete del;
+-}
+-
+-void printTree(TreeNode *root, bool brackets)
+-{
+-    if (root == NULL)
+-    {
+-        if (brackets) printf("{}");
+-        return;
+-    }
+-    if (brackets) printf("{");
+-    if (root -> left != NULL) printTree(root -> left, brackets);
+-    if (root != NULL) printf(" %c ", root -> key);
+-    if (root -> right != NULL) printTree(root -> right, brackets);
+-    if (brackets) printf("}");
+-}
+-
+-void SplayTree::inOrderPrint(bool brackets)
+-{
+-    printTree(this -> root, brackets);
+-}
+-
+-int main()
+-{
+-    SplayTree *sTree = new SplayTree();
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('D');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('I');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('N');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('O');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('S');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('A');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('U');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('R');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> Delete('I');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('Z');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> Delete('S');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    sTree -> insert('S');
+-    sTree -> inOrderPrint(true);
+-    printf("\n---------------------------------------------------------------\n");
+-    
+-    return 0;
++//SPLAY TREE -> IN ORDER TRAVERSAL WITH REVERSE FLAGS GIVES THE PERMUTATION
++//PERMUTATION ON [1, N] IS PADDED WITH 0 AND N+1
++#include "splay.hpp"
++
++
++int subtreeSizeOf(node *n)
++{
++	if(n == NULL) return 0;
++	return n -> subtreeSize;
++}
++
++void printHelper(node *r, bool rev) 	//rev flag turned on indicates that currently printed node is in a reversed subtree; if xor of rev and r -> flag if true, then subtree of node is reversed
++{
++	if(r == NULL) {cout << "()"; return;}
++	if(!rev)
++	{
++		if(r -> left != NULL ) printHelper(r -> left, !(r -> left -> flag));
++		cout << r -> key << ' ';
++		if(r -> right != NULL) printHelper(r -> right, !(r -> right -> flag));
++	}
++	else
++	{
++		if(r -> right != NULL ) printHelper(r -> right, r -> right -> flag);
++		cout << -1 * r -> key << ' ';
++		if(r -> left != NULL) printHelper(r -> left, r -> left -> flag);
++	}
++	return;
++}
++
++void splayTree::inOrderPrint()
++{
++	printHelper(root, !(root -> flag));
++}
++
++vector <int> traversalHelper(node *r, bool rev)	//returns subtree of r in order
++{
++	vector <int> left, right;
++	if(r == NULL) {return left;}
++	if(!rev)
++	{
++		if(r -> left != NULL ) left = traversalHelper(r -> left, !(r -> left -> flag));
++		left.push_back(r -> key);
++		if(r -> right != NULL) right = traversalHelper(r -> right, !(r -> right -> flag));
++	}
++	else
++	{
++		if(r -> right != NULL ) left = traversalHelper(r -> right, r -> right -> flag);
++		left.push_back(-1 * r -> key);
++		if(r -> left != NULL) right = traversalHelper(r -> left, r -> left -> flag);
++	}
++	for(int i: right) left.push_back(i);
++	return left;
++}
++
++//vector <int> splayTree::inOrderTraversal(){ return traversalHelper(root, !(root -> flag));}
++
++void splayTree::clearFlag(node *n)		//clear a reverse flag: for leaf - flip the sign of key and change flag, for internal node - change flag, flip key, exchange children, flip their flags
++{
++	if(n == NULL) 		return;
++	if(n -> flag == true) 	return;
++
++	n -> key *= -1;
++	n -> flag = true;
++
++	if(n -> left == NULL && n -> right == NULL) return;
++	else if(n -> left == NULL)  n -> right -> flag = !(n -> right -> flag);
++	else if(n -> right == NULL) n -> left  -> flag = !(n -> left  -> flag);
++	else
++	{
++		n -> left  -> flag = !(n -> left  -> flag);
++		n -> right -> flag = !(n -> right -> flag);
++	}
++	swap(n -> left, n -> right);
++	return;
+ }
+ 
++void splayTree::zig(node *x)			//single rotation on edge between x and its parent p, flags of x, its parent and grandparent are turned off (so the subtree is not reversed)
++{
++	node *p = x -> parent;
++	if(p == NULL) return;
++	node *g = p -> parent;
++
++	if(g != NULL) clearFlag(g);
++	clearFlag(p);
++	clearFlag(x);
++
++	if(g != NULL)
++	{
++		if(g -> left  == p) g -> left = x;
++		if(g -> right == p) g -> right = x;
++	}
++	if(p -> left == x)
++	{
++		node *A = x -> left;
++		node *B = x -> right;
++		node *C = p -> right;
++
++		int A_size = subtreeSizeOf(A);
++		int B_size = subtreeSizeOf(B);
++		int C_size = subtreeSizeOf(C);
++		
++		x -> parent = g;
++		x -> right = p;
++		
++		p -> parent = x;
++		p -> left = B;
++
++		p -> subtreeSize = 1 + B_size + C_size;
++		x -> subtreeSize = 1 + (p -> subtreeSize) + A_size;
++		
++		if(B != NULL) B -> parent = p;
++	}
++	else
++	{
++		node *A = p -> left;
++		node *B = x -> left;
++		node *C = x -> right;
++
++		int A_size = subtreeSizeOf(A);
++		int B_size = subtreeSizeOf(B);
++		int C_size = subtreeSizeOf(C);
++
++		x -> parent = g;
++		x -> left = p;
++	
++		p -> parent = x;
++		p -> right = B;
++
++		p -> subtreeSize = 1 + A_size + B_size;
++		x -> subtreeSize = 1 + (p -> subtreeSize) + C_size;
++		
++		if(B != NULL) B -> parent = p;
++	}	
++	return;
++}
++
++void splayTree::zigzig(node *x)		 	//when x and its parent p are on the same sides of their parents	
++{
++	node *p = x -> parent;
++	node *g = p -> parent;
++
++	if(g != NULL) clearFlag(g);
++	clearFlag(p);
++	clearFlag(x);
++	
++	zig(p);
++	zig(x);
++}
++
++void splayTree::zigzag(node *x)			//when x and its parent p are on different sides of their parents
++{
++	node *p = x -> parent;
++	node *g = p -> parent;
++	
++	if(g != NULL) clearFlag(g);
++	clearFlag(p);
++	clearFlag(x);
++
++	zig(x);
++	zig(x);
++}
++
++void splayTree::splay(node *x)			//splays x to the node using rotations, clears flag from root, so that it is turned off at the end
++{	
++	while(x -> parent != NULL)
++	{	
++		node *p = x -> parent;
++		node *g = p -> parent;
++		if(g == NULL) zig(x);
++		else if((g -> left == p && p -> left == x) || (g -> right == p  && p -> right == x)) zigzig(x);
++		else zigzag(x);
++	}
++	clearFlag(x);
++	this -> root = x;
++}
++
++splayTree::splayTree()
++{
++	root = NULL;
++}
++
++int splayTree::find(int k)				//splays k-th node to the root [0, n] and returns its key;
++{
++	node *curr = root;
++	node *prev = NULL;
++
++	while(curr != NULL)
++	{
++		clearFlag(curr);
++		int leftRootSize = subtreeSizeOf(curr -> left);
++
++		if(k == leftRootSize) {splay(curr); return curr -> key;}
++		prev = curr;
++		if(k < leftRootSize) curr = curr -> left;
++		else 
++		{
++			curr = curr -> right;
++			k -= (leftRootSize + 1);
++		}
++	}
++	splay(prev);
++	return prev -> key;
++}
++
++node* splayTree::insert(int k)			//inserts key at the last position in tree
++{
++	if(root == NULL)
++	{
++		root = new node(k);
++		return root;
++	}
++	int treeSize = subtreeSizeOf(root);
++	find(treeSize);
++
++	node *ins = new node(k);
++	node *last = root;
++
++	ins -> left = last;
++	last -> parent = ins;
++	ins -> subtreeSize = treeSize + 1;
++
++	root = ins;
++	return root;
++}
++
++splayTree::splayTree (const vector <int> pi)
++{
++	root = new node(0);
++
++	indexes.resize(pi.size() + 2);
++	
++	indexes[0] = root;
++    	for (int i : pi) {
++        	node* n = this -> insert(i);
++        	indexes[abs(n->key)] = n;
++   	 }
++
++    	node* n = this -> insert(pi.size() + 1);
++    	indexes[abs(n -> key)] = n;
++}
++
++
++pair <splayTree, splayTree> split(splayTree T, int x)			//splits into trees: left with first x elements, and right with the rest
++{
++	T.find(x);
++	node *L = T.root;
++	node *R = T.root -> right;
++
++	int rightSize = subtreeSizeOf(R);
++
++	if(L != NULL) T.clearFlag(L);
++	if(R != NULL) T.clearFlag(R);
++
++	splayTree treeLeft, treeRight;	
++
++	L -> right = NULL;
++	R -> parent = NULL;
++	L -> subtreeSize -= rightSize;
++	
++	treeLeft.root = L;
++	treeRight.root = R;
++
++	treeLeft.indexes  = T.indexes;
++	treeRight.indexes = T.indexes;
++
++	return {treeLeft, treeRight};
++}
++
++splayTree join(splayTree L, splayTree R)						//joins trees L and R such that any key in L is smaller than any key in R
++{
++	if(L.root == NULL) return R;
++	if(R.root == NULL) return L;
++
++	int leftSize  = subtreeSizeOf(L.root);
++	int rightSize = subtreeSizeOf(R.root);
++
++	L.find(MAXVAL);
++	R.find(MINVAL);
++	
++	if(leftSize >= rightSize)
++	{
++		L.root -> right = R.root;
++		R.root -> parent = L.root;
++		L.root -> subtreeSize = leftSize + rightSize;
++		return L;
++	}
++	R.root -> left = L.root;
++	L.root -> parent = R.root;
++	R.root -> subtreeSize = leftSize + rightSize;
++	return R;
++}
++
++void splayTree::reverse(int i, int j)
++{	
++	auto [T1, T2] = split(*this, j);					//T1 -> (.., j], T2 -> (j, ..)
++	
++	if(T1.root == NULL) return;
++
++	auto [T3, T4] = split(T1, i - 1);					// T3 -> (.., i), T4 -> [i, j], T2 -> (j, ..)	
++	if(T4.root == NULL) return;
++	T4.root -> flag = !(T4.root -> flag);
++	
++	clearFlag(T4.root);
++	T1 = join(T3, T4);	
++
++	*this = join(T1, T2);
++}
++
++int splayTree::indexOf(int x)
++{
++	splay(indexes[abs(x)]);	
++	int leftSize = subtreeSizeOf(root -> left);
++	return leftSize;
++}
+\ No newline at end of file

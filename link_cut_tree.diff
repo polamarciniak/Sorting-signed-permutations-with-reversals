@@ -1,0 +1,288 @@
+--- link_cut_tree.cpp	2024-08-29 10:18:26.000000000 +0200
++++ ./praca_inzynierska/link_cut_tree.cpp	2024-08-29 10:08:29.000000000 +0200
+@@ -1,118 +1,166 @@
+-//#undef assert
+-//#define assert(x) do{}while(0)
+-struct LinkCutTree{
+-    struct Node{
+-        Node*p=0, *pp=0, *c[2]={0, 0};
+-        int id;
+-        bool ev=0;
+-        Node(int _id=-1):id(_id){}
+-        void recalc(){
+-            for(int i:{0, 1})
+-                if(c[i]) c[i]->p=this;
+-        }
+-        void push(){
+-            if(ev){
+-                ev=0;
+-                swap(c[0], c[1]);
+-                for(int i:{0, 1})
+-                    if(c[i]) c[i]->ev^=1;
+-            }
+-        }
+-        void unlink(int i){
+-            assert(c[i]);
+-            c[i]->p=0;
+-            c[i]=0;
+-            recalc();
+-        }
+-        int up(){return p?p->c[1]==this:-1;}
+-        void rot(){
+-            swap(pp, p->pp);
+-            int i = up(), j=p->up();
+-            p->c[i]=c[!i];
+-            c[!i]=p; p=p->p;
+-            if(p) p->c[j]= this;
+-            c[!i]->recalc(); recalc();
+-            if(p) p->recalc();
+-        }
+-        Node* splay(){
+-            for(push();p;){
+-                if(p->p) p->p->push();
+-                p->push(); push();
+-                if(p->up()==up())
+-                    p->rot();
+-                rot();
+-            }
+-            return this;
+-        }
+-        Node*first(){
+-            push();
+-            return c[0]?c[0]->first():splay();
+-        }
+-    };
+-    vector<Node> g;
+-    LinkCutTree(size_t N){
+-        g.reserve(N);
+-        for(size_t i=0;i<N;++i)
+-            g.emplace_back(i);
+-    }
+-    bool connected(int u, int v){
+-        Node*x = access(&g[u])->first();
+-        Node*y = access(&g[v])->first();
+-        return x==y;
+-    }
+-    void link(int u, int p){
+-        if(connected(u, p)) return;
+-        assert(!connected(u, p));
+-        make_root(&g[u]);
+-        g[u].pp=&g[p];
+-    }
+-    void cut_up(int u){
+-        Node*x = &g[u];
+-        access(x);
+-        x->unlink(0);
+-    }
+-    void cut(int u, int v){
+-        if(!connected(u, v)) return;
+-        assert(connected(u, v));
+-        Node*x = &g[u],*y=&g[v];
+-        make_root(x); make_root(y);
+-        x->splay();
+-        assert(x->pp?y==x->pp:(y==x->c[0] || (x->c[0] && y==x->c[0]->c[0])));
+-        if(x->pp) x->pp=0;
+-        else x->unlink(0);
+-    }
+-    void make_root(Node*u){
+-        access(u);
+-        u->ev^=1;
+-        access(u);
+-    }
+-    Node*access(Node*x){
+-        Node*u = x;
+-        u->splay();
+-        while(Node*pp=u->pp){
+-            pp->splay();
+-            u->pp=0;
+-            if(pp->c[1]){
+-                swap(pp->c[1]->p,pp->c[1]->pp);
+-            }
+-            pp->c[1]=u;
+-            pp->recalc();
+-            u=pp;
+-        }
+-        x->splay();
+-        if(x->c[1]){
+-            x->c[1]->pp=x;
+-            x->unlink(1);
+-        }
+-        return u;
+-    }
+-    int lca(int u, int v){
+-        access(&g[u]);
+-        return access(&g[v])->id;
+-    }
+-    //AGG pathagg(int u, int v){
+-    //    make_root(u);
+-    //    access(v);
+-    //    return v->agg;
+-    //}
+-};
++#include <cassert>
++#include <climits>
++#include "link_cut_tree.hpp"
++
++void LinkCutTree::Node::recalc(){
++    for(int i:{0, 1})
++        if(c[i]) c[i]->p=this;
++};
++
++void LinkCutTree::Node::push(){
++    if(ev){
++        ev=0;
++        swap(c[0], c[1]);
++        for(int i:{0, 1})
++            if(c[i]) c[i]->ev^=1;
++    }
++};
++
++void LinkCutTree::Node::unlink(int i){
++    assert(c[i]);
++    c[i]->p=0;
++    c[i]=0;
++    recalc();
++};
++
++int LinkCutTree::Node::up(){return p?p->c[1]==this:-1;};
++
++void LinkCutTree::Node::rot(){
++    swap(pp, p->pp);
++    int i = up(), j=p->up();
++    p->c[i]=c[!i];
++    c[!i]=p; p=p->p;
++    if(p) p->c[j]= this;
++    c[!i]->recalc(); recalc();
++    if(p) p->recalc();
++};
++
++LinkCutTree::Node* LinkCutTree::Node::splay(){
++    for(push();p;){
++        if(p->p) p->p->push();
++        p->push(); push();
++        if(p->up()==up())
++            p->rot();
++        rot();
++    }
++    return this;
++};
++
++LinkCutTree::Node* LinkCutTree::Node::first(){
++    push();
++    return c[0]?c[0]->first():splay();
++};
++
++LinkCutTree::LinkCutTree(size_t N){
++    g.reserve(N);
++    for(size_t i=0;i<N;++i)
++        g.emplace_back(i);
++};
++
++bool LinkCutTree::connected(int u, int v){
++    Node*x = access(&g[u])->first();
++    Node*y = access(&g[v])->first();
++    return x==y;
++};
++
++void LinkCutTree::link(int u, int p){
++    if(connected(u, p)) return;
++    assert(!connected(u, p));
++    make_root(&g[u]);
++    g[u].pp=&g[p];
++};
++
++void LinkCutTree::cut_up(int u){
++    Node*x = &g[u];
++    access(x);
++    x->unlink(0);
++};
++
++void LinkCutTree::cut(int u, int v){
++    if(!connected(u, v)) return;
++    assert(connected(u, v));
++    Node*x = &g[u],*y=&g[v];
++    make_root(x); make_root(y);
++    x->splay();
++    assert(x->pp?y==x->pp:(y==x->c[0] || (x->c[0] && y==x->c[0]->c[0])));
++    if(x->pp) x->pp=0;
++    else x->unlink(0);
++};
++
++void LinkCutTree::make_root(Node*u){
++    access(u);
++    u->ev^=1;
++    access(u);
++};
++
++LinkCutTree::Node* LinkCutTree::access(Node*x){
++    Node*u = x;
++    u->splay();
++    while(Node*pp=u->pp){
++        pp->splay();
++        u->pp=0;
++        if(pp->c[1]){
++            swap(pp->c[1]->p,pp->c[1]->pp);
++        }
++        pp->c[1]=u;
++        pp->recalc();
++        u=pp;
++    }
++    x->splay();
++    if(x->c[1]){
++        x->c[1]->pp=x;
++        x->unlink(1);
++    }
++    return u;
++};
++
++int LinkCutTree::lca(int u, int v){
++    access(&g[u]);
++    return access(&g[v])->id;
++};
++
++void inorderTraversal(LinkCutTree::Node* node, vector <int> &v, bool direction) {
++    if (!node) return;
++    node->push(); // Apply any pending pushes
++    if(direction){
++        inorderTraversal(node->c[0], v, true);
++        v.push_back(node->id);
++        inorderTraversal(node->c[1], v, true);
++    }
++    else
++    {
++        inorderTraversal(node->c[1], v, false);
++        v.push_back(node->id);
++        inorderTraversal(node->c[0], v, false);
++    }
++}
++
++// Print the preferred path tree for each node
++void printPreferredPathTree(LinkCutTree& lct) {
++    for (size_t i = 0; i < lct.g.size(); ++i) {
++        cout << "Preferred path tree for node " << i << ": ";
++        lct.access(&lct.g[i]); // Access the node to make sure it is up-to-date
++        vector <int> v;
++        inorderTraversal(&lct.g[i], v, true);
++        for(int i : v) cout << i << ' ';
++        cout << endl;
++    }
++}
++
++vector <int> LinkCutTree::path(int u, int v)
++{
++    vector <int> a; vector <int> b;
++    if(!connected(u, v)) return a;
++    Node* x = &g[lca(u, v)];
++    make_root(x);
++
++    access(&g[u]);
++    inorderTraversal(&g[u], a, false);
++
++    access(&g[v]);
++    inorderTraversal(&g[v], b, true);
++
++    a.pop_back();
++    for(int i: b) a.push_back(i);
++    return a;
++};
+\ No newline at end of file
